@@ -2,7 +2,7 @@
 % 
 %       plot averages of EEG ONLY using LME estimates and confidence intervals 
 % 
-%       - Richard Somervail, 2023
+%       - Richard Somervail, 2025
 %%
 clc
 clearvars
@@ -29,14 +29,6 @@ s.savePath =  [ getRoot '/VPmonkey/paper/results/lw' ];  % mkdir(s.savePath)
 % plot limits 
 lim = VPmonkey_fetchLimits;
 
-% EEG topo peaks  ? this will find the closest peak on the average to the specified points
-s.topopeaks.SubM.AUD = [30 95 160]/1000; 
-s.topopeaks.SubM.SOM = [36 97 177] / 1000;
-s.topopeaks.SubM.VIS = [22 43  67 98 120 210 290 ]/1000;
-s.topopeaks.SubT.AUD = [33 79 150]/1000;
-s.topopeaks.SubT.SOM = [36 120 170] / 1000;
-s.topopeaks.SubT.VIS = [19 46  110  190 290 ]/1000;
-
 % channels to plot
 s.chans2plot.EEG = {'CZ'};
 
@@ -52,6 +44,9 @@ DSF = 2; % downsample factor, 2 = 512, 4 = 256
 
 
 %% get topoplot stuff
+
+% EEG topo peaks  (this will find the closest peak on the average to the specified points)
+topo = VPmonkey_fetchTopoPeaks;
 
 s.gridscale = 200; % 70 for quick topoplots, 200 fine for figure-ready plots
 
@@ -208,7 +203,7 @@ for sb = 1:length(subs)
         %% PLOT TOPOGRAPHIES 
 
         % get peaks to plot for this condition
-        desired_peaklats = s.topopeaks.(sub).(s.conds{cond});
+        desired_peaklats = topo.(sub).(s.conds{cond});
         npeaks = length(desired_peaklats);
 
         % find the closest real peaks on the average to this point

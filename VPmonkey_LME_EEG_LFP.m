@@ -4,7 +4,6 @@
 %           - this version also includes a summary metric of the 
 %               LFP pooled electrode average as a predictor to demonstrate relationship between pupil response & VP
 %           
-%           !!! missing topography plots from LME_EEG
 % 
 %       - Richard Somervail, 2025
 %%
@@ -29,17 +28,19 @@ s.savePath =  [ getRoot '/VPmonkey/paper/results/lw' ];  % mkdir(s.savePath)
 lim = VPmonkey_fetchLimits;
 
 % split_range  = [0, 0.35]; % range to compute ERP amplitude within
-split_range  = {[0, 0.2],[0, 0.2],[0, 0.4]}; % range to compute ERP amplitude within
+split_range  = {[0, 0.3],[0, 0.3],[0, 0.4]}; % range to compute ERP amplitude within
 
 s.conds = {'AUD','SOM','VIS'}; nconds = length(s.conds);
 
-% subs = {'SubM','SubT'};
+subs = {'SubM','SubT'};
 % subs = {'SubM'};
-subs = {'SubT'};
+% subs = {'SubT'};
 
 DSF = 2; % downsample factor, 2 = 512, 4 = 256
 
 %% get topoplot stuff
+
+topo = VPmonkey_fetchTopoPeaks;
 
 s.gridscale = 200; % 70 for quick topoplots, 200 fine for figure-ready plots
 
@@ -83,7 +84,7 @@ for sb = 1:length(subs)
 
     % z-score
     cfg.zscore = {'LFP'};  % ? here z-scoring seems helpful for improving interpretation of coefficients (also because overall LFP amplitude varies with electrode location/depth)
-    cfg.zscore_win.LFP = s.xlims.plot.LFP;
+    cfg.zscore_win.LFP = lim.xlims.plot.LFP;
     cfg.zscore_cond   = true;
 
     [data,tbl_depths] = VPmonkey_mergeSesh(cfg);
@@ -93,8 +94,8 @@ for sb = 1:length(subs)
     data.EEG = pop_rs_downsample(data.EEG,DSF);
 
     % extract time-window of interest
-    data.LFP = pop_select(data.LFP, 'time', s.xlims.plot.LFP);
-    data.EEG = pop_select(data.EEG, 'time', s.xlims.plot.EEG);
+    data.LFP = pop_select(data.LFP, 'time', lim.xlims.plot.LFP);
+    data.EEG = pop_select(data.EEG, 'time', lim.xlims.plot.EEG);
     nsesh = length(data.LFP);
 
     %% LOOP THROUGH CONDITIONS
@@ -265,12 +266,12 @@ for sb = 1:length(subs)
                     'cmap',cols(k,:),'LineWidth',1); hold on;
             end
             set_boundedline_transparency(0.8);
-            xlim(s.xlims.plot.EEG);
-            ylim(s.ylims.plot.EEG); 
+            xlim(lim.xlims.plot.EEG);
+            ylim(lim.ylims.plot.EEG); 
             set(gca,'YDir','reverse')
             plot(xlim,[0,0],'k-')
             xlabel 'time (s)'
-            ylabel 'coefficient estimate (A.U.)'
+            ylabel 'amplitude (uV)'
 
             % legend
             legs = [repmat({''},1,mdl.nx), strrep(mdl.xvars,'_',' ')];
@@ -282,6 +283,108 @@ for sb = 1:length(subs)
             rs_saveExportFig(fig, figsdir, figname, false);
       
         end
+
+        %% PLOT TOPOGRAPHIES 
+%       ? if we decide to plot the topos, probably should find peaks separately for each bin
+%           - but this involves changing the peak extraction method, because of SubT Som, where negative
+%             peak totally disappears
+% 
+%         % get peaks to plot for this condition
+%         desired_peaklats = topo.(sub).(s.conds{cond});
+%         npeaks = length(desired_peaklats);
+% 
+%         % get results of the intercept-only model for finding peaks only
+%         mdl = models(strcmp({models.name},'INT'));
+%         est = mdl.est;
+% 
+%         % find the closest real peaks on the average to this point
+%         [~,all_peaklocs] = findpeaks(abs(est)); 
+%         all_peaklats = times(all_peaklocs);
+%         final_lats = nan(1,npeaks);
+%         final_locs = nan(1,npeaks);
+%         for pk = 1:npeaks
+%             final_lats(pk) = all_peaklats( findnearest( all_peaklats , desired_peaklats(pk) ) );
+%             [~, final_locs(pk)] = min(abs( times - final_lats(pk) ));
+%         end
+% 
+%         % get results of the intercept-only model for finding peaks only
+%         mdl = models(strcmp({models.name},'LFPz_bin'));
+%         X  = mdl.x;
+%         xvars = mdl.xvars;
+%         nx = mdl.nx;
+%         
+%         % run LME for all channels for each chosen timepoint 
+%         deeg_allchans = cat(3,dcond.EEG.data);
+%         nchans = size(deeg_allchans,1);
+%         est_chans = nan(nchans,npeaks,nx); % one per LFPz_bin intercept
+%         for pk = 1:npeaks
+%             for c = 1:nchans
+%                 amp = double( squeeze(deeg_allchans(c,final_locs(pk),:)) );
+%                 mdltemp = fitlmematrix( X, amp, Z, G, 'FitMethod','REML');
+%                 est_chans(c,pk,:) = mdltemp.Coefficients.Estimate;
+%             end
+%         end
+% 
+%         % plot vertical lines on EEG average to indicate where the final topos are
+%         figname = [ sub '_LME_EEG_LFP_topoPEAKS_Cz_' s.conds{cond} ];
+%         fig = figure;
+%         plot(times,est); hold on;
+%         for pk = 1:npeaks
+%             plot([final_lats(pk),final_lats(pk)],ylim,'k')
+%         end
+%         rs_saveExportFig(fig, figsdir, figname);
+%         close(fig)
+% 
+%         % loop through identified peaks and plot topographies
+%         cd(figsdir)
+%         for pk = 1:npeaks
+%             for pk2 = 1:nx % loop through bins
+%                 figname = [ sub '_LME_EEG_LFP_topo_' s.conds{cond} '_' num2str(pk) '_' xvars{pk2} ]; 
+%                 fig = figure('name',figname, 'NumberTitle','off');
+%     
+%                 % plot
+%                 vals = est_chans(:,pk,pk2);
+%                 ctemp = [];
+%                     clims = ceil(max(abs(est_chans(:,pk,:)),[],'all')); % rounded absmax for both bins
+%                     clims = [-clims clims];
+%                 ctemp.clims     = clims;
+%                 ctemp.colormap  = colormap2;
+%                 ctemp.lay       = data.EEG(1).chanlocs;
+%                 ctemp.gridscale = s.gridscale; % 700
+%                 ctemp.numcontours = 0;
+%                 rickoplot_MK( vals, ctemp );
+%                 clim(clims) % redo because the actual clims topoplot uses are slightly higher than requested ...
+%                 colorbar
+%     
+%                 rs_saveExportFig(fig, figsdir, figname);
+%                 close(fig)
+%             end
+%         end
+
+        %% PLOT - LFP SPLIT
+        figname = [ sub '_LME_EEG_LFP_SPLIT_' s.conds{cond}  ];       
+        
+        % compute averages of each LFP bin
+        dlfp_bin = nan(nbins,length(times_lfp));
+        for b = 1:nbins
+            dlfp_bin(b,:) = mean(dlfp(logical(lfpz_bin(:,b)),:));
+        end
+
+        % plot average LFP from each bin superimposed
+        cols = distinguishable_colors(nbins);
+        fig = figure('name',figname); 
+        for b = 1:nbins
+            plot(times_lfp, dlfp_bin(b,:), 'Color',cols(b,:),'LineWidth',2); hold on;
+        end
+        xlim(lim.xlims.plot.LFP);
+        ylim([-4 4]); 
+        set(gca,'YDir','reverse')
+        plot(xlim,[0,0],'k-')
+        xlabel 'time (s)'
+        ylabel 'amplitude (uV)'
+
+        rs_saveExportFig(fig, figsdir, figname);
+
 
         %%
         close all 

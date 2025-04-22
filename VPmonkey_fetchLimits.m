@@ -20,7 +20,7 @@ lim.xlims.plot.MISC = [-0.2 0.5];
 lim.ylims.plot.EEG  = [-20 20];  
 lim.ylims.plot.LFP  = [-140 140];   
 lim.ylims.plot.MUA  = [-0.14 0.14];   % ? check later
-lim.ylims.plot.EYE  = [-1 1]; 
+lim.ylims.plot.EYE  = [-0.03 0.03]; 
 % topoplot clims - amplitudes  ? considering using rounded absmax now instead
 lim.clims.SubM.AUD = [-5 5];
 lim.clims.SubM.SOM = [-5 5];

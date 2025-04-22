@@ -28,7 +28,7 @@ s.savePath =  [ getRoot '/VPmonkey/paper/results/lw' ];  % mkdir(s.savePath)
 lim = VPmonkey_fetchLimits;
 
 % split_range  = [0, 0.4]; % range to compute ERP amplitude within
-split_range  = {[0, 0.2],[0, 0.2],[0, 0.4]}; % range to compute ERP amplitude within
+split_range  = {[0, 0.3],[0, 0.3],[0, 0.4]}; % range to compute ERP amplitude within
 
 % channel locations for these datasets
 s.chanlocs = '/home/rick/Dropbox/Somervail_Richard/EEG Configurations/monkeyEEG_LW.locs';
@@ -310,7 +310,7 @@ for sb = 1:length(subs)
             end
             set_boundedline_transparency(0.8);
             xlim(lim.xlims.plot.EYE);
-%             ylim(lim.ylims.plot.EYE); % ? not sure what to set limits to yet
+            ylim(lim.ylims.plot.EYE); 
 %             set(gca,'YDir','reverse')
             plot(xlim,[0,0],'k-')
             xlabel 'time (s)'
